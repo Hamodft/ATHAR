@@ -2,6 +2,10 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/import-cv",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dashboard",
       "destination": "/index.html"
     },

@@ -9,7 +9,9 @@
     "dev": "node scripts/dev.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.118.0"
+    "@supabase/supabase-js": "2.118.0",
+    "mammoth": "1.13.0",
+    "pdfjs-dist": "6.4.299"
   },
   "devDependencies": {
     "esbuild": "0.25.5",
