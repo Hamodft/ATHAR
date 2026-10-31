@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "2.118.0"
   },
   "devDependencies": {
-    "esbuild": "0.25.5"
+    "esbuild": "0.25.5",
+    "jsdom": "26.1.0"
   }
 }
