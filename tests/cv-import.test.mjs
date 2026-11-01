@@ -13,3 +13,14 @@ test('selection keeps all other fields and privacy preferences; experiences appe
 test('too many imported experiences are rejected rather than silently discarding existing roles',()=>{const existing=cleanDraft({experiences:Array.from({length:10},()=>({role:'Role'}))});assert.throws(()=>applyCvSelection(existing,{experiences:[{role:'New'}]},['experiences']),/experience-limit/)});
 test('arbitrary text is kept as source without fabricating a professional summary or education',()=>{const text='This is arbitrary text without CV headings, qualifications or a name.';const result=parseCvText(text);assert.equal(result.raw,text);assert.equal(result.proposed.work,'');assert.equal(result.proposed.education,'');assert.equal(result.proposed.name,'')});
 test('malformed and oversized DOCX archives are rejected before expansion',()=>{assert.throws(()=>validateDocxArchive(new ArrayBuffer(40)),/invalid-docx/);const buf=new ArrayBuffer(68),v=new DataView(buf);v.setUint32(0,0x02014b50,true);v.setUint32(24,30*1024*1024,true);v.setUint32(46,0x06054b50,true);v.setUint16(56,1,true);v.setUint32(62,0,true);assert.throws(()=>validateDocxArchive(buf),/archive-limit/)});
+test('long imported sections retain their last line and cannot silently overwrite a draft',()=>{
+ const end='END OF ORIGINAL EXPERIENCE';const summary='Detailed original summary. '.repeat(150)+end;const description='Tracked a customer request. '.repeat(100)+end;
+ const {proposed}=parseCvText(`Name: Test Person\nSummary\n${summary}\nExperience\nCoordinator\n${description}`);
+ assert.equal(proposed.work,summary);assert.equal(proposed.experiences[0].description,description);
+ const existing=cleanDraft({work:'Original summary',experiences:[{role:'Existing role'}]});
+ assert.throws(()=>applyCvSelection(existing,proposed,['work']),/اختصره/);
+ assert.throws(()=>applyCvSelection(existing,proposed,['experiences']),/اختصره/);
+ assert.equal(existing.work,'Original summary');assert.equal(existing.experiences.length,1);
+ assert.equal(applyCvSelection(existing,proposed,['name']).name,'Test Person');
+ proposed.work='Reviewed short summary';assert.equal(applyCvSelection(existing,proposed,['work']).work,proposed.work);
+});

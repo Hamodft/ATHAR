@@ -1,0 +1,3 @@
+# Synthetic CV audit fixtures
+
+All names, organizations, credentials and jobs are fictional. Text and matching DOCX files cover Arabic, English, mixed content, a graduate without employment, and an over-limit experience. cases.json is the factual reference, not a claim of automatic parsing accuracy. No real contact data. Long sections must remain complete during review and be shortened or split before applying. english-text.pdf is a minimal text PDF; no-text.pdf is a negative fixture containing a drawn rectangle and no text (not a scanned CV). Visual export checks and Arabic PDF layout checks are tracked separately.

@@ -1,4 +1,4 @@
-import {cleanDraft} from './common.js';
+import {cleanDraft,limits} from './common.js';
 export const importFields=[['name','الاسم'],['headline','المسمى التعريفي'],['work','النبذة'],['education','التعليم'],['courses','الدورات'],['skills','المهارات'],['city','المدينة'],['email','بريد التواصل'],['phone','رقم التواصل'],['experiences','الخبرات']];
 const normalize=s=>s.toLowerCase().replace(/[\u064b-\u065f\u0670ـ]/g,'').replace(/[أإآ]/g,'ا').replace(/[：:|•]/g,' ').replace(/\s+/g,' ').trim();
 const headings={work:['نبذة','نبذة عني','النبذة','النبذة المهنية','الملخص','الملخص المهني','الهدف المهني','summary','profile','professional summary','objective','about me'],experiences:['الخبرات','الخبرات العملية','الخبرة العملية','الخبرة المهنية','خبرات العمل','experience','work experience','professional experience','employment history'],education:['التعليم','المؤهلات العلمية','المؤهل العلمي','education','academic qualifications'],skills:['المهارات','المهارات الشخصية','المهارات التقنية','skills','technical skills','core skills'],courses:['الدورات','الدورات التدريبية','الشهادات والدورات','الشهادات','certifications','courses','training'],other:['التواصل','معلومات التواصل','البيانات الشخصية','المعلومات الشخصية','contact','contact information','personal information','languages','اللغات','references','المراجع','المشاريع','projects']};
@@ -17,10 +17,21 @@ export function parseCvText(text){
  const phone=numberText.match(/(?:\+966[\s.-]*5(?:[\s.-]*\d){8}|\b05(?:[\s.-]*\d){8}\b)/);if(phone)proposed.phone=phone[0].replace(/[\s.-]/g,'');
  const city=lines.find(s=>/^(?:المدينة|city|location|الموقع)\s*[:：]/i.test(s));if(city)proposed.city=city.replace(/^[^:：]+[:：]\s*/,'');
  const title=lines.find(s=>/^(?:المسمى(?: الوظيفي)?|job title|headline)\s*[:：]/i.test(s));if(title)proposed.headline=title.replace(/^[^:：]+[:：]\s*/,'');
- if(sections.experiences?.length){const [role,...details]=sections.experiences;proposed.experiences=[{role:role.slice(0,120),organization:'',period:'',description:details.join('\n').slice(0,2000)}]}
- return {raw,proposed:cleanDraft(proposed),missing:importFields.filter(([k])=>k==='experiences'?!proposed[k].length:!proposed[k]).map(([,label])=>label)};
+ if(sections.experiences?.length){const [role,...details]=sections.experiences;proposed.experiences=[{role,organization:'',period:'',description:details.join('\n')}]}
+ // Keep the complete extracted text for review. Bound it only after the owner
+ // has shortened or split the selected content, never by silently slicing it.
+ return {raw,proposed,missing:importFields.filter(([k])=>k==='experiences'?!proposed[k].length:!proposed[k]).map(([,label])=>label)};
+}
+export function importLengthIssues(d,selected=importFields.map(([key])=>key)){
+ const issues=[];
+ for(const [key,label]of importFields){if(!selected.includes(key))continue;
+  if(key==='experiences'){for(const [i,e]of (d.experiences||[]).entries())for(const [field,max]of Object.entries({role:120,organization:150,period:100,description:2000}))if(typeof e[field]==='string'&&e[field].length>max)issues.push({key,label:`${label} — التجربة ${i+1} — ${{role:"الدور",organization:"الجهة",period:"الفترة",description:"الوصف"}[field]}`,max,length:e[field].length})}
+  else if(typeof d[key]==='string'&&d[key].length>limits[key])issues.push({key,label,max:limits[key],length:d[key].length});
+ }
+ return issues;
 }
 export function applyCvSelection(existing,incoming,selected,mode='append'){
+ const issue=importLengthIssues(incoming,selected)[0];if(issue)throw Error(`${issue.label}: النص ${issue.length.toLocaleString('ar-SA')} حرفًا، والحد ${issue.max.toLocaleString('ar-SA')}. اختصره أو قسّم الخبرات قبل الإضافة؛ لم نغيّر مسودتك.`);
  const next=cleanDraft(existing),source=cleanDraft(incoming);
  for(const [key]of importFields)if(selected.includes(key)){
   if(key==='experiences'){const merged=mode==='replace'?source.experiences:[...next.experiences,...source.experiences];if(merged.length>10)throw Error('experience-limit');if(merged.some(e=>!e.role.trim()))throw Error('experience-role');next.experiences=merged}

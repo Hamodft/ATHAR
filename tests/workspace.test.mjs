@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {JSDOM} from 'jsdom';
 import {cleanDraft,esc,limits,publicContent} from '../src/common.js';
-import {parseCvText,applyCvSelection,importFields} from '../src/cv-import-model.js';
+import {parseCvText,applyCvSelection,importFields,importLengthIssues} from '../src/cv-import-model.js';
 const cvImporter=(await readFile(new URL('../src/cv-import.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'').replace(/export /g,'');
 const workspace=(await readFile(new URL('../src/workspace.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'').replace(/export /g,'');
 const renderer=await readFile(new URL('../profile-renderer.js',import.meta.url),'utf8');
@@ -14,7 +14,7 @@ async function fixture(path,{guest=false,admin=false}={}){
  const state={account:{user:guest?null:{id:'user-one'},ready:true,busy:false,message:'جاهز',remote:null,version:0,profile:null},draft:cleanDraft({name:'سارة',work:'نبذة عن عملي وخبراتي',education:'إدارة الأعمال',skills:'التواصل، التنظيم',email:'private@example.invalid'}),photo:''};
  const calls={admin:0,saves:0,feedback:[]};const stats={users:3,drafts:2,published:1,suggestions:0};
  const db={async rpc(name){if(name==='athar_is_admin')return {data:admin,error:null};calls.admin++;return {data:{stats,users:[],profiles:[],suggestions:[]},error:null}},from(table){assert.equal(table,'athar_suggestions');return {select(){return this},eq(){return this},order(){return this},limit:async()=>({data:calls.feedback,error:null}),insert:async value=>{calls.feedback.push({id:'suggestion-one',...value,status:'new',reply:'',created_at:new Date().toISOString()});return {error:null}}}}};
- Object.assign(win,{cleanDraft,esc,limits,publicContent,db,parseCvText,applyCvSelection,importFields});win.eval(renderer);win.eval(cvImporter);win.eval(workspace);
+ Object.assign(win,{cleanDraft,esc,limits,publicContent,db,parseCvText,applyCvSelection,importFields,importLengthIssues});win.eval(renderer);win.eval(cvImporter);win.eval(workspace);
  const api={state:()=>state,setDraft:d=>{state.draft=d},save:()=>true,capture(){},go(){},auth(){},signout(){},saveAccount:async()=>{calls.saves++;return true},loadAccount(){},publish(){},unpublish(){},exportCv(){},uploadPhoto(){},removePhoto(){}};
  win.render=()=>{};win.initWorkspace(api);await settle();return {win,doc:win.document,state,calls,close:()=>dom.window.close()};
 }
@@ -47,6 +47,21 @@ test('CV import reviews fields and requires explicit consent before replacing ex
  f.doc.getElementById('cv-review-form').dispatchEvent(new f.win.Event('submit',{bubbles:true,cancelable:true}));assert.equal(f.state.draft.name,'سارة');assert.match(f.doc.getElementById('cv-import-error').textContent,/موافقتك/);
  f.doc.getElementById('cv-overwrite').checked=true;f.doc.getElementById('cv-review-form').dispatchEvent(new f.win.Event('submit',{bubbles:true,cancelable:true}));
  assert.equal(f.state.draft.name,'أحمد علي');assert.equal(f.state.draft.email,'private@example.invalid');assert.equal(f.state.draft.phone,'0501234567');assert.equal(f.state.draft.experiences[0].role,'منسق خدمة عملاء');assert.match(f.doc.body.textContent,/لم تُنشر المعلومات/);
+ }finally{f.close()}
+});
+
+test('over-limit import remains editable and preserves the existing draft until reviewed',async()=>{
+ const f=await fixture('/import-cv');try{
+ const long='A real activity from the source. '.repeat(100)+'FINAL SOURCE LINE';
+ f.doc.getElementById('cv-paste').value=`Name: Test Person\nSummary\n${long}`;click(f,'#cv-parse-text');
+ const field=f.doc.querySelector('[data-cv-field="work"]');assert.equal(field.value,long);
+ assert.match(f.doc.body.textContent,/احتفظنا بالنص كاملًا/);
+ const choice=f.doc.querySelector('[data-import-select="work"]');choice.checked=true;choice.dispatchEvent(new f.win.Event('change',{bubbles:true}));f.doc.getElementById('cv-overwrite').checked=true;
+ f.doc.getElementById('cv-review-form').dispatchEvent(new f.win.Event('submit',{bubbles:true,cancelable:true}));
+ assert.equal(f.state.draft.work,'نبذة عن عملي وخبراتي');assert.match(f.doc.getElementById('cv-import-error').textContent,/اختصره/);
+ field.value='Reviewed source summary';field.dispatchEvent(new f.win.Event('input',{bubbles:true}));assert.equal(f.doc.getElementById('cv-length-status').textContent,'');f.doc.getElementById('cv-overwrite').checked=true;
+ f.doc.getElementById('cv-review-form').dispatchEvent(new f.win.Event('submit',{bubbles:true,cancelable:true}));
+ assert.equal(f.state.draft.work,'Reviewed source summary');assert.match(f.doc.body.textContent,/لم تُنشر المعلومات/);
  }finally{f.close()}
 });
 
