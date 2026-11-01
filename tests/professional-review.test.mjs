@@ -15,5 +15,5 @@ test('rewrite API bounds inputs and rejects identity fields, duplicates and inve
  const items=normalizeRequest({field:'work',original:'I tracked 5 requests.'});
  assert.throws(()=>validateResult({items:[{id:'work',suggestion:'I tracked 50 requests.',reason:'Clearer',question:''}]},items),/invalid_output/);
  assert.equal(validateResult({items:[{id:'work',suggestion:'I maintained a log of 5 requests.',reason:'Clearer',question:''}]},items).length,1);
- assert.equal(credentials({VERCEL_OIDC_TOKEN:'test'}).model,'openai/gpt-4.1-mini');assert.equal(credentials({}),null);
+ assert.equal(credentials({VERCEL_OIDC_TOKEN:'test'}).model,'openai/gpt-4.1-mini');assert.equal(credentials({}),null);assert.equal(credentials({}, {'x-vercel-oidc-token':'request-scoped-test-token'}).model,'openai/gpt-4.1-mini');
 });

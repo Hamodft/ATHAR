@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 const buckets=new Map();
 const allowed=/^(work|moment|momentDetail|headline|experiences\.[0-9]\.description)$/;
-export function credentials(env=process.env){return env.OPENAI_API_KEY?{token:env.OPENAI_API_KEY,url:'https://api.openai.com/v1/chat/completions',model:'gpt-4.1-mini'}:env.AI_GATEWAY_API_KEY||env.VERCEL_OIDC_TOKEN?{token:env.AI_GATEWAY_API_KEY||env.VERCEL_OIDC_TOKEN,url:'https://ai-gateway.vercel.sh/v1/chat/completions',model:'openai/gpt-4.1-mini'}:null}
+export function credentials(env=process.env,headers={}){const oidc=typeof headers['x-vercel-oidc-token']==='string'?headers['x-vercel-oidc-token']:env.VERCEL_OIDC_TOKEN;return env.OPENAI_API_KEY?{token:env.OPENAI_API_KEY,url:'https://api.openai.com/v1/chat/completions',model:'gpt-4.1-mini'}:env.AI_GATEWAY_API_KEY||oidc?{token:env.AI_GATEWAY_API_KEY||oidc,url:'https://ai-gateway.vercel.sh/v1/chat/completions',model:'openai/gpt-4.1-mini'}:null}
 export function normalizeRequest(body){
  const items=body?.items||[{id:body?.field,text:[body?.original,body?.followup].filter(Boolean).join('\n')}];
  if(!Array.isArray(items)||!items.length||items.length>14)throw Error('invalid_input');
@@ -22,7 +22,7 @@ export default async function handler(req,res){
  const origin=req.headers.origin;const host=req.headers['x-forwarded-host']||req.headers.host;
  let validOrigin=false;try{validOrigin=!!origin&&new URL(origin).host===host}catch{}if(!validOrigin)return res.status(403).json({message:'اطلب التحسين من صفحة أثر.'});
  if(!String(req.headers['content-type']||'').includes('application/json'))return res.status(415).json({message:'تعذّر قراءة الطلب.'});
- const config=credentials();if(!config)return res.status(503).json({code:'not_configured',message:'خدمة التحسين لم تُربط بعد. معلوماتك محفوظة ويمكنك المتابعة.'});
+ const config=credentials(process.env,req.headers);if(!config)return res.status(503).json({code:'not_configured',message:'خدمة التحسين لم تُربط بعد. معلوماتك محفوظة ويمكنك المتابعة.'});
  let body,items;try{body=typeof req.body==='string'?JSON.parse(req.body):req.body;items=normalizeRequest(body)}catch{return res.status(400).json({message:'اختر نصًا صالحًا للتحسين، أو اختصر الأقسام الطويلة.'})}
  const key=createHash('sha256').update(String(req.headers['x-forwarded-for']||'unknown')).digest('hex');const now=Date.now();for(const [k,v]of buckets)if(now-v.start>3600000)buckets.delete(k);const entry=buckets.get(key)||{start:now,count:0};if(entry.count>=10||buckets.size>5000)return res.status(429).json({message:'وصلت إلى حد التحسين المؤقت. احتفظنا بكلامك؛ حاول لاحقًا.'});entry.count++;buckets.set(key,entry);
  const schema={type:'object',properties:{items:{type:'array',items:{type:'object',properties:{id:{type:'string'},suggestion:{type:'string'},reason:{type:'string'},question:{type:'string'}},required:['id','suggestion','reason','question'],additionalProperties:false}}},required:['items'],additionalProperties:false};
