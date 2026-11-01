@@ -49,3 +49,15 @@ test('CV import reviews fields and requires explicit consent before replacing ex
  assert.equal(f.state.draft.name,'أحمد علي');assert.equal(f.state.draft.email,'private@example.invalid');assert.equal(f.state.draft.phone,'0501234567');assert.equal(f.state.draft.experiences[0].role,'منسق خدمة عملاء');assert.match(f.doc.body.textContent,/لم تُنشر المعلومات/);
  }finally{f.close()}
 });
+
+test('guest can customize and restore a portfolio without opening account-only editors or publishing',async()=>{
+ const f=await fixture('/design',{guest:true});try{
+  assert.ok(f.doc.getElementById('design-live-preview'));assert.ok(f.doc.getElementById('design-save-local'));assert.equal(f.doc.getElementById('editor-form'),null);
+  for(const [key,value]of [['layout','portfolio-light'],['theme','navy'],['density','compact'],['sectionOrder','story-first']]){
+   const input=f.doc.querySelector(`input[name="${key}"][value="${value}"]`);assert.ok(input);input.checked=true;input.dispatchEvent(new f.win.Event('change',{bubbles:true}));assert.equal(f.state.draft[key],value);
+  }
+  assert.ok(f.doc.querySelector('.portfolio-page.layout-portfolio-light.theme-navy.density-compact'));click(f,'#design-save-local');assert.match(f.doc.getElementById('design-local-status').textContent,/لم تُنشر/);assert.equal(f.calls.saves,0);
+  click(f,'a[href="/my-profile"]');assert.ok(f.doc.getElementById('workspace-publish'));assert.ok(f.doc.querySelector('.portfolio-page'));assert.equal(f.doc.querySelector('.guest-card'),null);
+  click(f,'a[href="/design"]');assert.equal(f.doc.querySelector('input[name="layout"][value="portfolio-light"]').checked,true);
+ }finally{f.close()}
+});
