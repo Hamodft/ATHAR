@@ -7,7 +7,7 @@ import {clearTransfers} from '../src/cv-transfer.js';
 const source=(await readFile(new URL('../src/platform.js',import.meta.url),'utf8')).replace(/import\s+[^;]+;\s*/g,'').split('if(!data.accountId)window.render();panel();')[0];
 function setup(query){
   const records=new Map(),elements=new Map();
-  const context=vm.createContext({data:cleanDraft({}),step:0,cleanDraft,esc,clearTransfers,render(){},save(){},capture(){},go(){},
+  const context=vm.createContext({data:cleanDraft({}),step:0,cleanDraft,esc,clearTransfers,createProfessionalReview:()=>({clear(){},offer(){}}),render(){},save(){},capture(){},go(){},
     localStorage:{get length(){return records.size},key:i=>[...records.keys()][i],getItem:k=>records.get(k)??null,setItem:(k,v)=>records.set(k,v),removeItem:k=>records.delete(k)},
     document:{getElementById(id){if(!elements.has(id))elements.set(id,{innerHTML:''});return elements.get(id)},querySelectorAll:()=>[],querySelector:()=>null},
     db:{from(table){return {select(){return this},eq(key,id){this.id=id;return this},maybeSingle(){return query(table,this.id)}}}},

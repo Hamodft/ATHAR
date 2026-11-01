@@ -1,9 +1,11 @@
+import {createProfessionalReview} from './professional-review.js';
 import {initWorkspace} from './workspace.js';
 import {db} from './client.js';import {cleanDraft,publicContent,validSlug,esc,newId} from './common.js';
 import {prepareTransfer,clearTransfers} from './cv-transfer.js';
 let syncRevision=0;
 const account={user:null,version:0,remote:null,profile:null,busy:false,ready:false,message:'نتحقق من حسابك…'};
 const $=id=>document.getElementById(id);
+const professionalReview=createProfessionalReview({get:()=>data,apply:next=>{const previous=cleanDraft(data);data=cleanDraft(next);if(!save()){data=previous;throw Error('تعذّر الحفظ المحلي؛ احتفظنا بالنص السابق.')}}});window.atharProfessionalReview=professionalReview;
 Object.assign(data,cleanDraft(data));
 try{localStorage.removeItem('athar-cv-export-v1')}catch{}
 const baseRender=render;window.render=function(){baseRender();tools()};
@@ -19,11 +21,13 @@ function authDialog(mode='login'){const recovery=mode==='recover',signup=mode===
 bind('tab-login',()=>{node.close();authDialog('login')});bind('tab-signup',()=>{node.close();authDialog('signup')});bind('forgot-password',()=>{node.close();authDialog('recover')});$('auth-form').onsubmit=async event=>{event.preventDefault();const email=$('auth-email').value.trim();const password=$('auth-password')?.value;const button=$('auth-submit');button.disabled=true;$('auth-message').textContent='لحظة…';try{let result;if(recovery)result=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/?recover=1'});else if(signup)result=await db.auth.signUp({email,password,options:{emailRedirectTo:location.origin+'/dashboard'}});else result=await db.auth.signInWithPassword({email,password});if(result.error)throw result.error;if(recovery){$('auth-message').textContent='إذا كان البريد مرتبطًا بحساب، ستصلك رسالة للاستعادة.'}else if(signup&&!result.data.session){$('auth-password').value='';$('auth-message').textContent='راجع بريدك لتأكيد الحساب، ثم ارجع وسجّل دخولك.'}else{node.close();await syncAccount(result.data.session);window.atharWorkspace?.navigate('/dashboard')}}catch(error){$('auth-message').textContent=safeError(error)}finally{button.disabled=false}}}
 function passwordDialog(){const node=dialog('password-dialog','<div class="dialog-head"><h2>اختر كلمة مرور جديدة</h2><button class="plain" data-close>إغلاق</button></div><form id="password-form"><label for="new-password">كلمة المرور الجديدة</label><input class="field" id="new-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required><p class="auth-msg" id="password-message"></p><button class="primary">حفظ كلمة المرور</button></form>');$('password-form').onsubmit=async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;const {error}=await db.auth.updateUser({password:$('new-password').value});if(error)$('password-message').textContent=safeError(error);else{node.close();history.replaceState({},'',location.pathname);message('تم تحديث كلمة المرور.')}button.disabled=false}}
 function clearPrivateView(){
+  professionalReview.clear();
   clearTransfers(localStorage);localStorage.setItem('athar-session-ended',String(Date.now()));
   data=cleanDraft({});save();window.atharPhotoUrl='';
   document.querySelectorAll('dialog[open]').forEach(node=>node.close());go(0);
 }
 async function syncAccount(session){
+  professionalReview.clear();
   const revision=++syncRevision, previous=account.user?.id, next=session?.user||null;
   account.user=next;account.ready=false;account.remote=null;account.version=0;account.profile=null;
   try{
@@ -63,7 +67,7 @@ async function refreshPhoto(){
   if(path&&userId){const {data:result}=await db.storage.from('athar-avatars').createSignedUrl(path,300);if(account.user?.id!==userId||data.avatarPath!==path)return;window.atharPhotoUrl=result?.signedUrl||''}
   if(step===5)render();
 }
-function tools(){if(step!==5)return;
+function tools(){if(step!==5)return;professionalReview.offer(document.getElementById('app'));
 const published=account.profile?.is_published;
 const badge=document.querySelector('.private-badge');if(badge)badge.textContent=published?'معاينة التعديلات · لديك صفحة منشورة':'معاينة خاصة · لك وحدك';
 const note=document.querySelector('.preview-note');if(note)note.textContent=published?'لديك نسخة منشورة. تعديلات هذه المعاينة تبقى خاصة إلى أن تراجعها وتنشرها من جديد.':'المعلومات معروضة كما اخترتها. راجعها وعدّلها على راحتك؛ لم تُنشر صفحتك للعامة.';
