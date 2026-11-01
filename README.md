@@ -66,3 +66,7 @@ Vercel: Build command `npm run build`, output `dist`, install `npm ci`.
 All five profile templates support an Arabic / English switch and mirrored reading directions. Add reviewed English fields and experiences under English profile content in /design or /edit. Arabic content remains unchanged, and both languages use the same design and contact-sharing choices. No automatic translation or new external processing service is used. Missing English content falls back to the original with a visible notice. The fully translated demonstration is available at /profile?lang=en. Printable CVs also support language selection.
 
 The applied database/bilingual.sql documents the additional English content key in published JSON snapshots; ownership policies and publication permissions are unchanged. Existing public pages change only after the user reviews both languages and publishes again.
+
+## المراجعة المجانية داخل المتصفح
+
+تعمل مراجعة التنسيق والأسطر المتكررة والأسئلة الإرشادية محليًا دون نموذج ذكاء اصطناعي أو إرسال النصوص لخدمة خارجية. تظهر بعد الاستيراد وفي معاينة الملف، وتتوافر أثناء الكتابة أيضًا. التعديلات تتطلب اختيار المستخدم مع إمكانية التراجع. endpoint التحسين الخارجي معطّل ويرجع 410 حتى عند استدعائه مباشرة. لا توجد رسوم معالجة ذكاء اصطناعي لهذه المراجعة؛ تبقى حدود الاستضافة والحسابات منفصلة.

@@ -1,7 +1,9 @@
+import {reviewText} from './local-review.js';
 import {createProfessionalReview} from './professional-review.js';
 import {initWorkspace} from './workspace.js';
 import {db} from './client.js';import {cleanDraft,publicContent,validSlug,esc,newId} from './common.js';
 import {prepareTransfer,clearTransfers} from './cv-transfer.js';
+window.atharLocalReview=reviewText;
 let syncRevision=0;
 const account={user:null,version:0,remote:null,profile:null,busy:false,ready:false,message:'نتحقق من حسابك…'};
 const $=id=>document.getElementById(id);
