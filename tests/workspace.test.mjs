@@ -61,3 +61,13 @@ test('guest can customize and restore a portfolio without opening account-only e
   click(f,'a[href="/design"]');assert.equal(f.doc.querySelector('input[name="layout"][value="portfolio-light"]').checked,true);
  }finally{f.close()}
 });
+
+test('English editor saves an independent translation and preserves it through design navigation',async()=>{
+ const f=await fixture('/design',{guest:true});try{
+  assert.ok(f.doc.getElementById('english-profile-form'));const arabicName=f.state.draft.name;
+  const name=f.doc.getElementById('english-name');name.value='Sara Reviewed';name.dispatchEvent(new f.win.Event('input',{bubbles:true}));assert.equal(f.state.draft.english.name,'Sara Reviewed');assert.equal(f.state.draft.name,arabicName);
+  click(f,'#add-english-experience');const role=f.doc.querySelector('[data-en-exp="0"][data-en-key="role"]');role.value='Operations Coordinator';role.dispatchEvent(new f.win.Event('input',{bubbles:true}));assert.equal(f.state.draft.english.experiences[0].role,'Operations Coordinator');assert.equal(f.state.draft.experiences.length,0);
+  f.doc.getElementById('english-profile-form').dispatchEvent(new f.win.Event('submit',{bubbles:true,cancelable:true}));assert.match(f.doc.getElementById('english-save-status').textContent,/Nothing has been published/);assert.equal(f.calls.saves,0);
+  click(f,'a[href="/my-profile"]');click(f,'a[href="/design"]');assert.equal(f.doc.getElementById('english-name').value,'Sara Reviewed');
+ }finally{f.close()}
+});

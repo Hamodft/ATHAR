@@ -59,3 +59,10 @@ Vercel: Build command `npm run build`, output `dist`, install `npm ci`.
 ## قالب الحضور المهني
 
 قالب داكن وآخر فاتح مستوحيان من المرجع المهني، مع الألوان والخط والمسافات وترتيب الأقسام. المثال `/profile` يتيح تجربة التصميم دون تغيير مسودة الزائر. `/design` يتيح تخصيص مسودة الضيف وحفظها محليًا؛ حفظ الحساب والنشر يبقيان إجراءين منفصلين. لا تظهر الأقسام الفارغة، ولا تُنقل بيانات المثال إلى ملف المستخدم. تفاصيل التنفيذ والتحقق في `PORTFOLIO-IMPLEMENTATION.md`.
+
+
+## Arabic and English profiles
+
+All five profile templates support an Arabic / English switch and mirrored reading directions. Add reviewed English fields and experiences under English profile content in /design or /edit. Arabic content remains unchanged, and both languages use the same design and contact-sharing choices. No automatic translation or new external processing service is used. Missing English content falls back to the original with a visible notice. The fully translated demonstration is available at /profile?lang=en. Printable CVs also support language selection.
+
+The applied database/bilingual.sql documents the additional English content key in published JSON snapshots; ownership policies and publication permissions are unchanged. Existing public pages change only after the user reviews both languages and publishes again.
