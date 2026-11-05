@@ -8,7 +8,7 @@ Prepared 2026-11-05 for the user's zero-cost implementation request.
 - Quota migration `cloudflare_review_daily_quotas` applied in Supabase.
 - Rollback-only database verification: first two reservations allowed, third rejected, unauthenticated claim rejected. Anonymous role cannot execute; authenticated role cannot insert/update/delete counters directly. No synthetic account or count persisted.
 - Security advisor's RLS-without-policy notice is intentional for the private counts table: no direct client access is granted. Existing leaked-password-protection warning is outside this change.
-- No live model request, real quality evaluation, hosted browser verification, or production activation yet. Cloudflare account login is pending user action.
+- Hosted preview verified on desktop and at 390px with no horizontal overflow; configuration reports ready=false/externalGeneration=false and the send button stays disabled. No live model request, real quality evaluation, or production activation yet. Cloudflare account login is pending user action.
 
 ## Flow and boundaries
 
