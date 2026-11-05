@@ -25,7 +25,7 @@ test('old rewrite endpoint cannot generate or spend even when called directly',(
 test('local review works without fetch and applies only reviewed edits with undo',async()=>{
  const dom=new JSDOM('<main id="root"></main>',{runScripts:'outside-only'});const w=dom.window;
  const source=(await readFile(new URL('../src/professional-review.js',import.meta.url),'utf8')).replace(/^import .*;\n/gm,'').replace(/export /g,'');
- let draft=cleanDraft({name:'Test Person',work:'  I  track requests.  '});w.fetch=()=>{throw Error('Network must not be used')};Object.assign(w,{esc,cleanDraft,reviewText,profilePrompts});w.eval(source);
+ let draft=cleanDraft({name:'Test Person',work:'  I  track requests.  '});w.fetch=()=>{throw Error('Network must not be used')};Object.assign(w,{esc,cleanDraft,reviewText,profilePrompts,createCloudEditor:()=>({offer(){},clear(){}})});w.eval(source);
  const review=w.createProfessionalReview({get:()=>draft,apply:next=>{draft=next}});review.offer(w.document.getElementById('root'));w.document.querySelector('[data-review-start]').click();
  assert.match(w.document.body.textContent,/ليست توليدًا/);assert.equal(draft.work,'  I  track requests.  ');
  w.document.querySelector('[data-review-text]').value='I track customer requests.';w.document.querySelector('[data-review-select]').checked=true;w.document.querySelector('[data-review-apply]').click();assert.equal(draft.work,'I track customer requests.');
